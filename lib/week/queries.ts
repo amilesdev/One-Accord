@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type {
   DbPartnership,
@@ -12,10 +13,12 @@ import type {
 
 /**
  * Returns the caller's active partnership, or null if they don't have one.
+ * Wrapped with React.cache() so multiple callers in the same server request
+ * (e.g. layout + page) share a single DB round-trip.
  */
-export async function getActivePartnership(
+export const getActivePartnership = cache(async (
   userId: string
-): Promise<DbPartnership | null> {
+): Promise<DbPartnership | null> => {
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -26,7 +29,7 @@ export async function getActivePartnership(
     .maybeSingle();
 
   return data ?? null;
-}
+});
 
 /**
  * Returns the partner's user_id relative to the calling user.
@@ -64,10 +67,11 @@ export async function getActiveTemplate(
 
 /**
  * Returns the active week for a partnership, or null.
+ * Cached per request — layout and page share one DB round-trip.
  */
-export async function getActiveWeek(
+export const getActiveWeek = cache(async (
   partnershipId: string
-): Promise<DbWeek | null> {
+): Promise<DbWeek | null> => {
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -78,7 +82,7 @@ export async function getActiveWeek(
     .maybeSingle();
 
   return data ?? null;
-}
+});
 
 /**
  * Returns completed weeks for a partnership, newest first.
