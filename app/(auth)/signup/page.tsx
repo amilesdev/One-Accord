@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandMark } from "@/components/brand/brand-mark";
 
 export default function SignupPage() {
   const [email, setEmail]       = useState("");
@@ -40,13 +41,17 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="w-full max-w-sm space-y-4 text-center">
-        <h1 className="text-2xl font-semibold text-foreground">Check your email</h1>
-        <p className="text-sm text-muted-foreground">
-          We sent a confirmation link to <strong>{email}</strong>. Follow it to
-          activate your account.
-        </p>
-        <Link href="/login" className="text-sm text-primary hover:underline">
+      <div className="space-y-6 text-center">
+        <BrandMark size={44} className="mx-auto" />
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold text-foreground">Check your email</h1>
+          <p className="text-sm text-muted-foreground">
+            We sent a confirmation link to{" "}
+            <span className="font-medium text-foreground">{email}</span>.
+            Follow it to activate your account.
+          </p>
+        </div>
+        <Link href="/login" className="text-sm font-medium text-primary hover:underline">
           Back to sign in
         </Link>
       </div>
@@ -54,54 +59,64 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="w-full max-w-sm space-y-8">
-      <div className="space-y-1 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-          One Accord
-        </h1>
-        <p className="text-sm text-muted-foreground">Grow together in Christ.</p>
+    <div className="space-y-8">
+      {/* Brand */}
+      <div className="flex flex-col items-center gap-3 text-center">
+        <BrandMark size={44} />
+        <div className="space-y-1">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            One Accord
+          </h1>
+          <p className="text-sm text-muted-foreground">Grow together in Christ.</p>
+        </div>
       </div>
 
-      <form onSubmit={handleSignup} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-        </div>
+      {/* Card */}
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <form onSubmit={handleSignup} className="space-y-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-        </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+            <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
+          </div>
 
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
+          {error && (
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
+          )}
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Creating account…" : "Create account"}
-        </Button>
-      </form>
+          <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            {loading ? "Creating account…" : "Create account"}
+          </Button>
+        </form>
+      </div>
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="text-primary hover:underline">
+        <Link href="/login" className="font-medium text-primary hover:underline">
           Sign in
         </Link>
       </p>
