@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Check, Users, CalendarDays } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
+import { AutoRefresh } from "@/components/realtime/auto-refresh";
 import {
   getActivePartnership,
   getPartnerId,
@@ -89,7 +90,11 @@ export default async function CompanionPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
-      <PageHeader title="Companion" subtitle={weekLabel} />
+      <PageHeader
+        title="Companion"
+        subtitle={weekLabel}
+        action={<LiveDot />}
+      />
 
       {/* ── Side-by-side completion ──────────────────────────────── */}
       <div className="rounded-2xl border border-border bg-card p-5">
@@ -111,7 +116,24 @@ export default async function CompanionPage() {
           />
         ))}
       </div>
+
+      {/* Polls every 3 s; pauses when tab is hidden */}
+      <AutoRefresh intervalMs={3000} />
     </div>
+  );
+}
+
+// ─── Live indicator ───────────────────────────────────────────────────────────
+
+function LiveDot() {
+  return (
+    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+      </span>
+      Live
+    </span>
   );
 }
 

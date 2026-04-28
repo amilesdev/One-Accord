@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { TaskList } from "@/components/tasks/task-list";
 import { WeekSummaryModal } from "@/components/summary/week-summary-modal";
+import { AutoRefresh } from "@/components/realtime/auto-refresh";
 import {
   getActivePartnership,
   getActiveWeekWithProgress,
@@ -57,6 +58,8 @@ export default async function HomePage() {
       <PageHeader title="This Week" subtitle={weekLabel} />
       <TaskList tasks={weekData.tasks} weekLabel={weekLabel} />
       <WeekSummaryModal currentWeekId={weekData.id} />
+      {/* Background reconciliation — keeps local state in sync with server */}
+      <AutoRefresh intervalMs={30000} />
     </div>
   );
 }
