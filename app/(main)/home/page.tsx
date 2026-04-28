@@ -3,6 +3,7 @@ import { Users, CalendarDays } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { TaskList } from "@/components/tasks/task-list";
+import { WeekSummaryModal } from "@/components/summary/week-summary-modal";
 import {
   getActivePartnership,
   getActiveWeekWithProgress,
@@ -55,6 +56,7 @@ export default async function HomePage() {
     <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
       <PageHeader title="This Week" subtitle={weekLabel} />
       <TaskList tasks={weekData.tasks} weekLabel={weekLabel} />
+      <WeekSummaryModal currentWeekId={weekData.id} />
     </div>
   );
 }
