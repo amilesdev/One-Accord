@@ -40,12 +40,36 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
 
   // One undo entry at a time — the most recent mutating action
   const [undoEntry, setUndoEntry] = useState<UndoEntry | null>(null);
-  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const undoTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref keeps pendingSet readable inside effects without stale-closure risk
+  const pendingSetRef = useRef(pendingSet);
 
   useEffect(
     () => () => { if (undoTimerRef.current) clearTimeout(undoTimerRef.current); },
     []
   );
+
+  // Keep the ref in sync on every render
+  useEffect(() => { pendingSetRef.current = pendingSet; });
+
+  // Reconcile with server data when router.refresh() delivers new props.
+  // Skips tasks that have in-flight mutations so optimistic values are preserved.
+  useEffect(() => {
+    setProgressMap((current) => {
+      const next  = new Map(current);
+      let   dirty = false;
+      for (const task of tasks) {
+        if (pendingSetRef.current.has(task.id)) continue;
+        const serverVal = task.progress?.current_value ?? 0;
+        if (next.get(task.id) !== serverVal) {
+          next.set(task.id, serverVal);
+          dirty = true;
+        }
+      }
+      return dirty ? next : current;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks]);
 
   // ── Internal helpers ───────────────────────────────────────────────────────
 
