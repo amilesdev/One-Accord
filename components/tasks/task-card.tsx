@@ -3,41 +3,19 @@ import { cn } from "@/lib/utils";
 import type { TaskWithProgress } from "@/lib/types/database";
 
 interface TaskCardProps {
-  task:       TaskWithProgress;
-  value:      number;
-  pending:    boolean;
+  task:        TaskWithProgress;
+  value:       number;
+  pending:     boolean;
   onIncrement: () => void;
   onDecrement: () => void;
   onToggle:    () => void;
 }
 
-export function TaskCard({
-  task,
-  value,
-  pending,
-  onIncrement,
-  onDecrement,
-  onToggle,
-}: TaskCardProps) {
-  if (task.task_type === "counter") {
-    return (
-      <CounterTask
-        task={task}
-        value={value}
-        pending={pending}
-        onIncrement={onIncrement}
-        onDecrement={onDecrement}
-      />
-    );
-  }
-
-  return (
-    <SimpleTask
-      task={task}
-      value={value}
-      pending={pending}
-      onToggle={onToggle}
-    />
+export function TaskCard(props: TaskCardProps) {
+  return props.task.task_type === "counter" ? (
+    <CounterTask {...props} />
+  ) : (
+    <SimpleTask {...props} />
   );
 }
 
@@ -49,84 +27,84 @@ function CounterTask({
   pending,
   onIncrement,
   onDecrement,
-}: {
-  task:        TaskWithProgress;
-  value:       number;
-  pending:     boolean;
-  onIncrement: () => void;
-  onDecrement: () => void;
-}) {
-  const target    = task.target_value ?? 1;
-  const pct       = Math.min(100, Math.round((value / target) * 100));
-  const complete  = value >= target;
-  const atMin     = value <= 0;
-  const atMax     = value >= target;
+}: TaskCardProps) {
+  const target   = task.target_value ?? 1;
+  const pct      = Math.min(100, Math.round((value / target) * 100));
+  const complete = value >= target;
 
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-card p-5 transition-colors duration-300",
-        complete ? "border-accent/40" : "border-border"
+        "rounded-2xl border bg-card transition-colors duration-300",
+        complete ? "border-accent/40" : "border-border",
+        pending && "opacity-80"
       )}
     >
-      {/* Title row */}
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <span
-          className={cn(
-            "text-sm font-medium transition-colors duration-300",
+      <div className="p-5 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3">
+          <span className={cn(
+            "text-sm font-medium leading-snug transition-colors duration-300",
             complete ? "text-accent" : "text-foreground"
-          )}
-        >
-          {task.title}
-        </span>
-        <span
-          className={cn(
-            "shrink-0 text-xs tabular-nums transition-colors duration-300",
-            complete ? "text-accent font-semibold" : "text-muted-foreground"
-          )}
-        >
-          {value} / {target}
-        </span>
-      </div>
+          )}>
+            {task.title}
+          </span>
 
-      {/* Progress bar */}
-      <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-secondary">
-        <div
-          className={cn(
-            "h-full rounded-full transition-all duration-500 ease-out",
-            complete ? "bg-accent" : "bg-primary"
-          )}
-          style={{ width: `${pct}%` }}
-        />
+          <span className={cn(
+            "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums",
+            "transition-all duration-300",
+            complete
+              ? "bg-accent/15 text-accent"
+              : "bg-secondary text-muted-foreground"
+          )}>
+            {value}&thinsp;/&thinsp;{target}
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+          <div
+            className={cn(
+              "h-full rounded-full transition-all duration-500 ease-out",
+              complete ? "bg-accent" : "bg-primary"
+            )}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-between">
-        <IconButton
+      <div className={cn(
+        "flex items-center justify-between border-t px-4 py-3 transition-colors duration-300",
+        complete ? "border-accent/20" : "border-border"
+      )}>
+        <StepButton
           onClick={onDecrement}
-          disabled={pending || atMin}
-          aria-label="Decrease"
+          disabled={pending || value <= 0}
+          aria-label="Decrease by 1"
         >
-          <Minus className="h-4 w-4" />
-        </IconButton>
+          <Minus className="h-3.5 w-3.5" />
+        </StepButton>
 
         {complete ? (
           <span className="flex items-center gap-1.5 text-xs font-medium text-accent">
-            <Check className="h-3.5 w-3.5" />
+            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
             Complete
           </span>
         ) : (
-          <div className="h-px flex-1 mx-4 bg-border" />
+          <span className="text-xs text-muted-foreground">
+            {target - value} more to go
+          </span>
         )}
 
-        <IconButton
+        <StepButton
           onClick={onIncrement}
-          disabled={pending || atMax}
-          aria-label="Increase"
-          highlighted={!complete}
+          disabled={pending || value >= target}
+          primary={!complete}
+          aria-label="Add 1"
         >
-          <Plus className="h-4 w-4" />
-        </IconButton>
+          <Plus className="h-3.5 w-3.5" />
+        </StepButton>
       </div>
     </div>
   );
@@ -134,17 +112,7 @@ function CounterTask({
 
 // ─── Simple task ──────────────────────────────────────────────────────────────
 
-function SimpleTask({
-  task,
-  value,
-  pending,
-  onToggle,
-}: {
-  task:     TaskWithProgress;
-  value:    number;
-  pending:  boolean;
-  onToggle: () => void;
-}) {
+function SimpleTask({ task, value, pending, onToggle }: TaskCardProps) {
   const complete = value === 1;
 
   return (
@@ -152,55 +120,52 @@ function SimpleTask({
       onClick={onToggle}
       disabled={pending}
       className={cn(
-        "group w-full rounded-2xl border bg-card p-5 text-left",
+        "group w-full rounded-2xl border bg-card px-5 py-4 text-left",
         "flex items-center gap-4",
-        "transition-colors duration-200",
-        "disabled:pointer-events-none disabled:opacity-60",
+        "transition-all duration-200 active:scale-[0.99]",
+        "disabled:pointer-events-none",
+        pending && "opacity-75",
         complete
           ? "border-accent/40 hover:border-accent/60"
-          : "border-border hover:border-primary/40"
+          : "border-border hover:border-primary/30 hover:bg-card/80"
       )}
     >
-      {/* Check circle */}
-      <span
-        className={cn(
-          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2",
-          "transition-all duration-300",
-          complete
-            ? "border-accent bg-accent text-white"
-            : "border-muted-foreground/40 group-hover:border-primary/60"
-        )}
-      >
-        {complete && <Check className="h-3.5 w-3.5" />}
+      {/* Circle indicator */}
+      <span className={cn(
+        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+        "border-2 transition-all duration-300",
+        complete
+          ? "border-accent bg-accent"
+          : "border-muted-foreground/30 group-hover:border-primary/50"
+      )}>
+        {complete && <Check className="h-3 w-3 text-white" strokeWidth={2.5} />}
       </span>
 
       {/* Label */}
-      <span
-        className={cn(
-          "text-sm font-medium transition-colors duration-300",
-          complete
-            ? "text-muted-foreground line-through decoration-muted-foreground/40"
-            : "text-foreground"
-        )}
-      >
+      <span className={cn(
+        "text-sm font-medium transition-all duration-300",
+        complete
+          ? "text-muted-foreground line-through decoration-muted-foreground/30"
+          : "text-foreground"
+      )}>
         {task.title}
       </span>
     </button>
   );
 }
 
-// ─── Shared icon button ───────────────────────────────────────────────────────
+// ─── Step button (counter ±) ──────────────────────────────────────────────────
 
-function IconButton({
+function StepButton({
   children,
   disabled,
-  highlighted,
+  primary,
   onClick,
   "aria-label": ariaLabel,
 }: {
   children:     React.ReactNode;
   disabled:     boolean;
-  highlighted?: boolean;
+  primary?:     boolean;
   onClick:      () => void;
   "aria-label": string;
 }) {
@@ -211,10 +176,10 @@ function IconButton({
       aria-label={ariaLabel}
       className={cn(
         "flex h-9 w-9 items-center justify-center rounded-xl",
-        "transition-all duration-200 active:scale-95",
-        "disabled:pointer-events-none disabled:opacity-30",
-        highlighted
-          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+        "transition-all duration-150 active:scale-90",
+        "disabled:pointer-events-none disabled:opacity-25",
+        primary
+          ? "bg-primary text-primary-foreground hover:bg-primary/85 shadow-sm"
           : "bg-secondary text-foreground hover:bg-secondary/70"
       )}
     >
