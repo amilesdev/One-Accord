@@ -4,7 +4,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-12">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-12">
       {/* Soft radial glow behind content */}
       <div
         className="pointer-events-none absolute inset-0"
