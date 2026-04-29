@@ -9,6 +9,7 @@ import {
   getActivePartnership,
   getActiveWeekWithProgress,
 } from "@/lib/week/queries";
+import { ensureActiveWeek } from "@/lib/week/actions";
 import { formatWeekRange } from "@/lib/week/utils";
 
 export default async function HomePage() {
@@ -33,6 +34,11 @@ export default async function HomePage() {
       </div>
     );
   }
+
+  // Create the week from the template if one doesn't exist yet.
+  // Must run in the page (not the layout) because layouts don't re-render
+  // on client-side navigation between child routes.
+  await ensureActiveWeek();
 
   const weekData = await getActiveWeekWithProgress(partnership.id, user.id);
 

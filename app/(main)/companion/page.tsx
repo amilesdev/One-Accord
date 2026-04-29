@@ -8,6 +8,7 @@ import {
   getPartnerId,
   getActiveWeekWithProgress,
 } from "@/lib/week/queries";
+import { ensureActiveWeek } from "@/lib/week/actions";
 import { formatWeekRange, calcCompletionPercent } from "@/lib/week/utils";
 import { cn } from "@/lib/utils";
 import type { TaskWithProgress } from "@/lib/types/database";
@@ -36,6 +37,8 @@ export default async function CompanionPage() {
   }
 
   const partnerId = getPartnerId(partnership, user.id);
+
+  await ensureActiveWeek();
 
   // Fetch both progress sets + partner profile in parallel
   const [myWeek, partnerWeek, partnerResult] = await Promise.all([
