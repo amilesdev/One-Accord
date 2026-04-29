@@ -67,11 +67,12 @@ export async function getActiveTemplate(
 
 /**
  * Returns the active week for a partnership, or null.
- * Cached per request — layout and page share one DB round-trip.
+ * NOT cached: ensureActiveWeek() in the layout may create a week mid-request,
+ * so the page must see the post-creation result, not a cached pre-creation null.
  */
-export const getActiveWeek = cache(async (
+export async function getActiveWeek(
   partnershipId: string
-): Promise<DbWeek | null> => {
+): Promise<DbWeek | null> {
   const supabase = await createClient();
 
   const { data } = await supabase
@@ -82,7 +83,7 @@ export const getActiveWeek = cache(async (
     .maybeSingle();
 
   return data ?? null;
-});
+}
 
 /**
  * Returns completed weeks for a partnership, newest first.
