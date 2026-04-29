@@ -1,23 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth, err } from "@/lib/api/helpers";
-import { getActivePartnership } from "@/lib/week/queries";
 
 /**
  * POST /api/partner/link
  *
- * Claims a pending partnership using an invite code, activating the link
- * between two users.
+ * Claims a pending partnership using an invite code.
+ * Delegates all logic (existence check, self-link guard, already-partnered
+ * guard, race-condition lock) to the SECURITY DEFINER SQL function
+ * `claim_partnership_invite`, which bypasses RLS so it can both read and
+ * update a pending row the caller isn't a member of yet.
  *
- * Body:
- *   { invite_code: string }
- *
- * Guards:
- *   - Caller cannot claim their own invite code
- *   - Caller cannot link if they already have an active partnership
- *   - Invite code must belong to a pending partnership
- *
- * Response:
- *   { data: { partnership } }
+ * Body:     { invite_code: string }
+ * Response: { data: { partnership } }
  */
 export async function POST(req: Request) {
   const { user, unauthorized } = await requireAuth();
@@ -36,38 +30,22 @@ export async function POST(req: Request) {
     return err("invite_code is required", 400);
   }
 
-  // Block if already in an active partnership
-  const existing = await getActivePartnership(user!.id);
-  if (existing) return err("You are already in an active partnership", 409);
-
   const supabase = await createClient();
 
-  const { data: partnership } = await supabase
-    .from("partnerships")
-    .select("*")
-    .eq("invite_code", invite_code.trim().toUpperCase())
-    .eq("status", "pending")
-    .maybeSingle();
+  const { data: partnership, error } = await supabase.rpc(
+    "claim_partnership_invite",
+    { p_invite_code: invite_code.trim() }
+  );
 
-  if (!partnership) return err("Invite code not found or already used", 404);
-
-  // Cannot claim your own invite
-  if (partnership.user_a_id === user!.id) {
-    return err("You cannot link with yourself", 400);
+  if (error) {
+    if (error.message.includes("already_partnered"))
+      return err("You are already in an active partnership", 409);
+    if (error.message.includes("self_link"))
+      return err("You cannot link with yourself", 400);
+    if (error.message.includes("not_found"))
+      return err("Invite code not found or already used", 404);
+    return err(error.message, 500);
   }
 
-  const { data: activated, error } = await supabase
-    .from("partnerships")
-    .update({
-      user_b_id:    user!.id,
-      status:       "active",
-      activated_at: new Date().toISOString(),
-    })
-    .eq("id", partnership.id)
-    .select()
-    .single();
-
-  if (error) return err(error.message, 500);
-
-  return Response.json({ data: { partnership: activated }, error: null });
+  return Response.json({ data: { partnership }, error: null });
 }
