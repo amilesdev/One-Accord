@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskWithProgress } from "@/lib/types/database";
@@ -32,6 +35,27 @@ function CounterTask({
   const pct      = Math.min(100, Math.round((value / target) * 100));
   const complete = value >= target;
 
+  // Trigger a white fill-glow whenever value increases (but not on completion)
+  const prevValueRef = useRef(value);
+  const [glowing, setGlowing] = useState(false);
+
+  useEffect(() => {
+    if (value !== prevValueRef.current) {
+      prevValueRef.current = value;
+      if (!complete) {
+        setGlowing(true);
+        const t = setTimeout(() => setGlowing(false), 900);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [value, complete]);
+
+  const barShadow = complete
+    ? "0 0 14px 5px rgba(201,168,76,0.45), 0 0 5px 2px rgba(201,168,76,0.75)"
+    : glowing
+    ? "0 0 10px 4px rgba(255,255,255,0.65)"
+    : "none";
+
   return (
     <div
       className={cn(
@@ -61,14 +85,18 @@ function CounterTask({
           </span>
         </div>
 
-        {/* Progress bar */}
-        <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+        {/* Progress bar — overflow-hidden removed so the glow can spread */}
+        <div className="h-2 w-full rounded-full bg-secondary">
           <div
-            className={cn(
-              "h-full rounded-full transition-all duration-500 ease-out",
-              complete ? "bg-accent" : "bg-primary"
-            )}
-            style={{ width: `${pct}%` }}
+            className={cn("h-full rounded-full", !complete && "bg-primary")}
+            style={{
+              width: `${pct}%`,
+              transition: "width 600ms ease-out, box-shadow 700ms ease-out",
+              background: complete
+                ? "linear-gradient(90deg, #c9a84c 0%, #ddb95c 50%, #c9a84c 100%)"
+                : undefined,
+              boxShadow: barShadow,
+            }}
           />
         </div>
       </div>

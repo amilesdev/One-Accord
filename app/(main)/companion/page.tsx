@@ -192,13 +192,19 @@ function ComparisonColumn({
         </p>
       </div>
 
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+      <div className="h-1.5 w-full rounded-full bg-secondary">
         <div
-          className={cn(
-            "h-full rounded-full transition-all duration-700 ease-out",
-            complete ? "bg-accent" : "bg-primary"
-          )}
-          style={{ width: `${pct}%` }}
+          className={cn("h-full rounded-full", !complete && "bg-primary")}
+          style={{
+            width: `${pct}%`,
+            transition: "width 700ms ease-out",
+            background: complete
+              ? "linear-gradient(90deg, #c9a84c 0%, #ddb95c 50%, #c9a84c 100%)"
+              : undefined,
+            boxShadow: complete
+              ? "0 0 10px 4px rgba(201,168,76,0.4), 0 0 4px 1px rgba(201,168,76,0.7)"
+              : "none",
+          }}
         />
       </div>
     </div>
@@ -259,13 +265,19 @@ function ProgressRow({
             {value}&thinsp;/&thinsp;{target}
           </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+        <div className="h-1.5 w-full rounded-full bg-secondary">
           <div
-            className={cn(
-              "h-full rounded-full transition-all duration-500 ease-out",
-              complete ? "bg-accent" : "bg-primary"
-            )}
-            style={{ width: `${pct}%` }}
+            className={cn("h-full rounded-full", !complete && "bg-primary")}
+            style={{
+              width: `${pct}%`,
+              transition: "width 500ms ease-out",
+              background: complete
+                ? "linear-gradient(90deg, #c9a84c 0%, #ddb95c 50%, #c9a84c 100%)"
+                : undefined,
+              boxShadow: complete
+                ? "0 0 10px 4px rgba(201,168,76,0.4), 0 0 4px 1px rgba(201,168,76,0.7)"
+                : "none",
+            }}
           />
         </div>
       </div>
