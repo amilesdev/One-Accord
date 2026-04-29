@@ -190,6 +190,21 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
   }));
   const pct      = calcCompletionPercent(progressData);
   const complete = pct === 100;
+
+  // Glow on the summary bar when overall pct increases
+  const prevPctRef      = useRef(pct);
+  const [summaryGlowing, setSummaryGlowing] = useState(false);
+
+  useEffect(() => {
+    if (pct !== prevPctRef.current) {
+      prevPctRef.current = pct;
+      if (!complete) {
+        setSummaryGlowing(true);
+        const t = setTimeout(() => setSummaryGlowing(false), 900);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [pct, complete]);
   const done     = progressData.filter((t) =>
     t.task_type === "counter"
       ? (t.target_value ?? 0) > 0 && t.current_value >= (t.target_value ?? 0)
@@ -240,14 +255,22 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
           </span>
         </div>
 
-        {/* Progress bar */}
-        <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+        {/* Progress bar — overflow-hidden removed so glow can spread */}
+        <div className="h-2 w-full rounded-full bg-secondary">
           <div
-            className={cn(
-              "h-full rounded-full transition-all duration-700 ease-out",
-              complete ? "bg-accent" : "bg-primary"
-            )}
-            style={{ width: `${pct}%` }}
+            className={cn("h-full rounded-full", !complete && "bg-primary")}
+            style={{
+              width: `${pct}%`,
+              transition: "width 700ms ease-out, box-shadow 700ms ease-out",
+              background: complete
+                ? "linear-gradient(90deg, #c9a84c 0%, #ddb95c 50%, #c9a84c 100%)"
+                : undefined,
+              boxShadow: complete
+                ? "0 0 14px 5px rgba(201,168,76,0.45), 0 0 5px 2px rgba(201,168,76,0.75)"
+                : summaryGlowing
+                ? "0 0 10px 4px rgba(255,255,255,0.65)"
+                : "none",
+            }}
           />
         </div>
       </div>
