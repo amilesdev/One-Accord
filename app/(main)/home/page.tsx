@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Users, CalendarDays } from "lucide-react";
+import { Users, CalendarDays, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { TaskList } from "@/components/tasks/task-list";
@@ -38,12 +38,28 @@ export default async function HomePage() {
   // Create the week from the template if one doesn't exist yet.
   // Must run in the page (not the layout) because layouts don't re-render
   // on client-side navigation between child routes.
-  await ensureActiveWeek();
+  const weekResult = await ensureActiveWeek();
 
-  const weekData = await getActiveWeekWithProgress(partnership.id, user.id);
+  // Skip the DB round-trip when we already know there is no active week.
+  const weekData =
+    weekResult.status === "ok"
+      ? await getActiveWeekWithProgress(partnership.id, user.id)
+      : null;
 
   // ── No active week / template ─────────────────────────────────────────────
   if (!weekData) {
+    if (weekResult.status === "error") {
+      return (
+        <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
+          <PageHeader title="This Week" />
+          <EmptyCard
+            icon={<AlertCircle className="h-5 w-5" />}
+            title="Something went wrong"
+            body={weekResult.message}
+          />
+        </div>
+      );
+    }
     return (
       <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
         <PageHeader title="This Week" />

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Check, Users, CalendarDays } from "lucide-react";
+import { Check, Users, CalendarDays, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
 import { AutoRefresh } from "@/components/realtime/auto-refresh";
@@ -38,7 +38,33 @@ export default async function CompanionPage() {
 
   const partnerId = getPartnerId(partnership, user.id);
 
-  await ensureActiveWeek();
+  const weekResult = await ensureActiveWeek();
+
+  // ── No active week ────────────────────────────────────────────────────────
+  if (weekResult.status !== "ok") {
+    if (weekResult.status === "error") {
+      return (
+        <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
+          <PageHeader title="Companion" />
+          <EmptyCard
+            icon={<AlertCircle className="h-5 w-5" />}
+            title="Something went wrong"
+            body={weekResult.message}
+          />
+        </div>
+      );
+    }
+    return (
+      <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
+        <PageHeader title="Companion" />
+        <EmptyCard
+          icon={<CalendarDays className="h-5 w-5" />}
+          title="No active week"
+          body="Set up a weekly plan in Settings to get started."
+        />
+      </div>
+    );
+  }
 
   // Fetch both progress sets + partner profile in parallel
   const [myWeek, partnerWeek, partnerResult] = await Promise.all([
@@ -51,7 +77,6 @@ export default async function CompanionPage() {
       .maybeSingle(),
   ]);
 
-  // ── No active week ────────────────────────────────────────────────────────
   if (!myWeek || !partnerWeek) {
     return (
       <div className="mx-auto max-w-lg px-4 py-8 space-y-6">

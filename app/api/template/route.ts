@@ -79,24 +79,26 @@ export async function PUT(request: Request) {
 
   const supabase = await createClient();
 
-  // Deactivate current template (if any) and create new one atomically
-  const [, { data: newTemplate, error }] = await Promise.all([
-    supabase
-      .from("weekly_templates")
-      .update({ is_active: false })
-      .eq("partnership_id", partnership!.id)
-      .eq("is_active", true),
-    supabase
-      .from("weekly_templates")
-      .insert({
-        partnership_id:   partnership!.id,
-        week_start_day,
-        task_definitions,
-        is_active:        true,
-      })
-      .select()
-      .single(),
-  ]);
+  // Deactivate FIRST, then insert — must be sequential to avoid violating
+  // the unique index on (partnership_id) WHERE is_active = true.
+  const { error: deactivateError } = await supabase
+    .from("weekly_templates")
+    .update({ is_active: false })
+    .eq("partnership_id", partnership!.id)
+    .eq("is_active", true);
+
+  if (deactivateError) return err(deactivateError.message, 500);
+
+  const { data: newTemplate, error } = await supabase
+    .from("weekly_templates")
+    .insert({
+      partnership_id:   partnership!.id,
+      week_start_day,
+      task_definitions,
+      is_active:        true,
+    })
+    .select()
+    .single();
 
   if (error) return err(error.message, 500);
 
