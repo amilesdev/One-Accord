@@ -9,6 +9,7 @@ import {
   getActivePartnership,
   getActiveWeekWithProgress,
 } from "@/lib/week/queries";
+import { getReflectionsForWeek } from "@/lib/reflections/queries";
 import { ensureActiveWeek } from "@/lib/week/actions";
 import { formatWeekRange } from "@/lib/week/utils";
 
@@ -72,13 +73,23 @@ export default async function HomePage() {
     );
   }
 
-  const weekLabel = formatWeekRange(weekData.start_date, weekData.end_date);
+  const weekLabel  = formatWeekRange(weekData.start_date, weekData.end_date);
+  const reflections = await getReflectionsForWeek(weekData.id, user.id);
+  const reflectionTaskIds = reflections
+    .filter((r) => r.task_id !== null)
+    .map((r) => r.task_id as string);
 
   // ── Active week ───────────────────────────────────────────────────────────
   return (
     <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
       <PageHeader title="This Week" subtitle={weekLabel} />
-      <TaskList tasks={weekData.tasks} weekLabel={weekLabel} />
+      <TaskList
+        tasks={weekData.tasks}
+        weekLabel={weekLabel}
+        weekId={weekData.id}
+        weekStatus={weekData.status}
+        initialReflectionTaskIds={reflectionTaskIds}
+      />
       <WeekSummaryModal currentWeekId={weekData.id} />
       {/* Background reconciliation — keeps local state in sync with server */}
       <AutoRefresh intervalMs={30000} />
