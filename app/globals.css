@@ -2,7 +2,7 @@
 
 /* ── Design Tokens ─────────────────────────────────────── */
 :root {
-  --background:           #ede4ce;
+  --background:           #f5f0e8;
   --foreground:           #2c2c2c;
   --card:                 #faf7f2;
   --card-foreground:      #2c2c2c;
@@ -100,12 +100,6 @@ body {
   line-height: 1.6;
 }
 
-@media (prefers-color-scheme: light) {
-  body {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1000' height='1000'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.025' numOctaves='2' stitchTiles='stitch'/%3E%3CfeGaussianBlur stdDeviation='3 0.5'/%3E%3CfeColorMatrix type='saturate' values='0.15'/%3E%3C/filter%3E%3Crect width='1000' height='1000' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-    background-blend-mode: overlay;
-  }
-}
 
 /* Headings */
 h1, h2, h3, h4 {
