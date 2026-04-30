@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Check, Minus, Plus } from "lucide-react";
+import { Check, Minus, Plus, PenLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskWithProgress } from "@/lib/types/database";
 
 interface TaskCardProps {
-  task:        TaskWithProgress;
-  value:       number;
-  pending:     boolean;
-  onIncrement: () => void;
-  onDecrement: () => void;
-  onToggle:    () => void;
+  task:             TaskWithProgress;
+  value:            number;
+  pending:          boolean;
+  hasReflection:    boolean;
+  onIncrement:      () => void;
+  onDecrement:      () => void;
+  onToggle:         () => void;
+  onOpenReflection: () => void;
 }
 
 export function TaskCard(props: TaskCardProps) {
@@ -28,14 +30,15 @@ function CounterTask({
   task,
   value,
   pending,
+  hasReflection,
   onIncrement,
   onDecrement,
+  onOpenReflection,
 }: TaskCardProps) {
   const target   = task.target_value ?? 1;
   const pct      = Math.min(100, Math.round((value / target) * 100));
   const complete = value >= target;
 
-  // Trigger a white fill-glow whenever value increases (but not on completion)
   const prevValueRef = useRef(value);
   const [glowing, setGlowing] = useState(false);
 
@@ -85,7 +88,7 @@ function CounterTask({
           </span>
         </div>
 
-        {/* Progress bar — overflow-hidden removed so the glow can spread */}
+        {/* Progress bar */}
         <div className="h-2 w-full rounded-full bg-secondary">
           <div
             className={cn("h-full rounded-full", !complete && "bg-primary")}
@@ -125,14 +128,29 @@ function CounterTask({
           </span>
         )}
 
-        <StepButton
-          onClick={onIncrement}
-          disabled={pending || value >= target}
-          primary={!complete}
-          aria-label="Add 1"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </StepButton>
+        <div className="flex items-center gap-2">
+          {/* Reflection indicator / button */}
+          <button
+            onClick={onOpenReflection}
+            aria-label={hasReflection ? "View reflection" : "Add reflection"}
+            className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-secondary"
+          >
+            {hasReflection ? (
+              <span className="h-2 w-2 rounded-full bg-accent/70" />
+            ) : (
+              <PenLine className="h-3.5 w-3.5 text-muted-foreground/30 transition-colors hover:text-muted-foreground" />
+            )}
+          </button>
+
+          <StepButton
+            onClick={onIncrement}
+            disabled={pending || value >= target}
+            primary={!complete}
+            aria-label="Add 1"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </StepButton>
+        </div>
       </div>
     </div>
   );
@@ -140,45 +158,64 @@ function CounterTask({
 
 // ─── Simple task ──────────────────────────────────────────────────────────────
 
-function SimpleTask({ task, value, pending, onToggle }: TaskCardProps) {
+function SimpleTask({ task, value, pending, hasReflection, onToggle, onOpenReflection }: TaskCardProps) {
   const complete = value === 1;
 
   return (
-    <button
-      onClick={onToggle}
-      disabled={pending}
+    <div
       className={cn(
-        "group w-full rounded-2xl border bg-card px-5 py-4 text-left",
-        "flex items-center gap-4",
-        "transition-all duration-200 active:scale-[0.99]",
-        "disabled:pointer-events-none",
+        "w-full rounded-2xl border bg-card",
+        "flex items-stretch",
+        "transition-colors duration-200",
         pending && "opacity-75",
         complete
-          ? "border-accent/40 hover:border-accent/60"
-          : "border-border hover:border-primary/30 hover:bg-card/80"
+          ? "border-accent/40"
+          : "border-border hover:border-primary/30"
       )}
     >
-      {/* Circle indicator */}
-      <span className={cn(
-        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
-        "border-2 transition-all duration-300",
-        complete
-          ? "border-accent bg-accent"
-          : "border-muted-foreground/30 group-hover:border-primary/50"
-      )}>
-        {complete && <Check className="h-3 w-3 text-white" strokeWidth={2.5} />}
-      </span>
+      {/* Toggle area */}
+      <button
+        onClick={onToggle}
+        disabled={pending}
+        className={cn(
+          "flex flex-1 items-center gap-4 px-5 py-4 text-left",
+          "active:scale-[0.99] transition-transform duration-150",
+          "disabled:pointer-events-none",
+        )}
+      >
+        {/* Circle indicator */}
+        <span className={cn(
+          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+          "border-2 transition-all duration-300",
+          complete ? "border-accent bg-accent" : "border-muted-foreground/30"
+        )}>
+          {complete && <Check className="h-3 w-3 text-white" strokeWidth={2.5} />}
+        </span>
 
-      {/* Label */}
-      <span className={cn(
-        "text-sm font-medium transition-all duration-300",
-        complete
-          ? "text-muted-foreground line-through decoration-muted-foreground/30"
-          : "text-foreground"
-      )}>
-        {task.title}
-      </span>
-    </button>
+        {/* Label */}
+        <span className={cn(
+          "text-sm font-medium transition-all duration-300",
+          complete
+            ? "text-muted-foreground line-through decoration-muted-foreground/30"
+            : "text-foreground"
+        )}>
+          {task.title}
+        </span>
+      </button>
+
+      {/* Reflection button */}
+      <button
+        onClick={onOpenReflection}
+        aria-label={hasReflection ? "View reflection" : "Add reflection"}
+        className="flex items-center justify-center px-4 transition-colors hover:bg-secondary/50 rounded-r-2xl"
+      >
+        {hasReflection ? (
+          <span className="h-2 w-2 rounded-full bg-accent/70" />
+        ) : (
+          <PenLine className="h-3.5 w-3.5 text-muted-foreground/30 transition-colors" />
+        )}
+      </button>
+    </div>
   );
 }
 

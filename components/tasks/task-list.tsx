@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Undo2 } from "lucide-react";
 import { TaskCard } from "@/components/tasks/task-card";
+import { ReflectionModal } from "@/components/reflections/reflection-modal";
 import { apiIncrement, apiComplete, apiSetValue } from "@/lib/progress/api";
 import { calcCompletionPercent } from "@/lib/week/utils";
 import { cn } from "@/lib/utils";
@@ -10,7 +11,6 @@ import type { TaskWithProgress } from "@/lib/types/database";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** Tracks enough info to reverse the last action via the API. */
 interface UndoEntry {
   taskId:        string;
   taskType:      string;
@@ -18,30 +18,35 @@ interface UndoEntry {
 }
 
 interface TaskListProps {
-  tasks:     TaskWithProgress[];
-  weekLabel: string;
+  tasks:                      TaskWithProgress[];
+  weekLabel:                  string;
+  weekId:                     string;
+  weekStatus:                 "active" | "completed";
+  initialReflectionTaskIds:   string[];
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function TaskList({ tasks, weekLabel }: TaskListProps) {
-  /**
-   * Client-owned progress map: taskId → current_value.
-   * Seeded from server props once; mutations are applied locally and
-   * persisted in the background. The server is the source of truth on
-   * next page load.
-   */
+export function TaskList({
+  tasks,
+  weekLabel,
+  weekId,
+  weekStatus,
+  initialReflectionTaskIds,
+}: TaskListProps) {
   const [progressMap, setProgressMap] = useState<Map<string, number>>(
     () => new Map(tasks.map((t) => [t.id, t.progress?.current_value ?? 0]))
   );
+  const [pendingSet, setPendingSet]   = useState<Set<string>>(new Set());
+  const [undoEntry, setUndoEntry]     = useState<UndoEntry | null>(null);
 
-  // Tasks waiting on an in-flight API call (controls are disabled)
-  const [pendingSet, setPendingSet] = useState<Set<string>>(new Set());
+  // Reflection state
+  const [reflectionOpen, setReflectionOpen]     = useState<{ taskId: string; title: string } | null>(null);
+  const [hasReflectionSet, setHasReflectionSet] = useState<Set<string>>(
+    () => new Set(initialReflectionTaskIds)
+  );
 
-  // One undo entry at a time — the most recent mutating action
-  const [undoEntry, setUndoEntry] = useState<UndoEntry | null>(null);
   const undoTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Ref keeps pendingSet readable inside effects without stale-closure risk
   const pendingSetRef = useRef(pendingSet);
 
   useEffect(
@@ -49,11 +54,8 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
     []
   );
 
-  // Keep the ref in sync on every render
   useEffect(() => { pendingSetRef.current = pendingSet; });
 
-  // Reconcile with server data when router.refresh() delivers new props.
-  // Skips tasks that have in-flight mutations so optimistic values are preserved.
   useEffect(() => {
     setProgressMap((current) => {
       const next  = new Map(current);
@@ -93,38 +95,29 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
 
   // ── Core mutation ──────────────────────────────────────────────────────────
 
-  /**
-   * Optimistically updates local state, calls the appropriate API endpoint,
-   * then reverts if the call fails.
-   */
   const applyUpdate = useCallback(
     async (
-      task:      TaskWithProgress,
-      newValue:  number,
-      persist:   () => Promise<{ error: string | null }>
+      task:     TaskWithProgress,
+      newValue: number,
+      persist:  () => Promise<{ error: string | null }>
     ) => {
       const previousValue = progressMap.get(task.id) ?? 0;
       if (newValue === previousValue) return;
 
-      // 1. Optimistic update — immediate
       commitValue(task.id, newValue);
       setTaskPending(task.id, true);
 
-      // 2. Persist via API
       const { error } = await persist();
 
       setTaskPending(task.id, false);
 
       if (error) {
-        commitValue(task.id, previousValue); // revert
+        commitValue(task.id, previousValue);
         return;
       }
 
-      // 3. Arm undo for 4 s
       armUndo({ taskId: task.id, taskType: task.task_type, previousValue });
     },
-    // progressMap reference changes on every update; useCallback still helps
-    // by avoiding stale captures of other deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressMap]
   );
@@ -158,6 +151,19 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
     [progressMap, applyUpdate]
   );
 
+  // ── Reflection handlers ────────────────────────────────────────────────────
+
+  const handleOpenReflection = useCallback((task: TaskWithProgress) => {
+    setReflectionOpen({ taskId: task.id, title: task.title });
+  }, []);
+
+  const handleCloseReflection = useCallback((taskId: string, hasContent: boolean) => {
+    setReflectionOpen(null);
+    if (hasContent) {
+      setHasReflectionSet((prev) => new Set(prev).add(taskId));
+    }
+  }, []);
+
   // ── Undo ───────────────────────────────────────────────────────────────────
 
   const handleUndo = useCallback(async () => {
@@ -170,7 +176,6 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
     commitValue(taskId, previousValue);
     setTaskPending(taskId, true);
 
-    // Route the undo to the correct endpoint
     const persist =
       taskType === "simple"
         ? () => apiComplete(taskId, previousValue === 1)
@@ -178,7 +183,6 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
 
     await persist();
     setTaskPending(taskId, false);
-    // No re-arm — undo is one level only
   }, [undoEntry]);
 
   // ── Derived ────────────────────────────────────────────────────────────────
@@ -191,7 +195,6 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
   const pct      = calcCompletionPercent(progressData);
   const complete = pct === 100;
 
-  // Glow on the summary bar when overall pct increases
   const prevPctRef      = useRef(pct);
   const [summaryGlowing, setSummaryGlowing] = useState(false);
 
@@ -205,7 +208,8 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
       }
     }
   }, [pct, complete]);
-  const done     = progressData.filter((t) =>
+
+  const done = progressData.filter((t) =>
     t.task_type === "counter"
       ? (t.target_value ?? 0) > 0 && t.current_value >= (t.target_value ?? 0)
       : t.current_value === 1
@@ -227,88 +231,102 @@ export function TaskList({ tasks, weekLabel }: TaskListProps) {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-3">
-      {/* ── Summary card ────────────────────────────────────────────────── */}
-      <div
-        className={cn(
-          "rounded-2xl border bg-card p-5 space-y-3 transition-colors duration-500",
-          complete ? "border-accent/50" : "border-border"
-        )}
-      >
-        <div className="flex items-end justify-between gap-2">
-          <div className="space-y-0.5">
-            <p className="text-xs text-muted-foreground">{weekLabel}</p>
-            <p className={cn(
-              "text-sm font-semibold transition-colors duration-300",
+    <>
+      <div className="space-y-3">
+        {/* ── Summary card ────────────────────────────────────────────────── */}
+        <div
+          className={cn(
+            "rounded-2xl border bg-card p-5 space-y-3 transition-colors duration-500",
+            complete ? "border-accent/50" : "border-border"
+          )}
+        >
+          <div className="flex items-end justify-between gap-2">
+            <div className="space-y-0.5">
+              <p className="text-xs text-muted-foreground">{weekLabel}</p>
+              <p className={cn(
+                "text-sm font-semibold transition-colors duration-300",
+                complete ? "text-accent" : "text-foreground"
+              )}>
+                {complete
+                  ? "All tasks complete"
+                  : `${done} of ${tasks.length} complete`}
+              </p>
+            </div>
+            <span className={cn(
+              "text-2xl font-semibold tabular-nums leading-none transition-colors duration-300",
               complete ? "text-accent" : "text-foreground"
             )}>
-              {complete
-                ? "All tasks complete"
-                : `${done} of ${tasks.length} complete`}
-            </p>
+              {pct}%
+            </span>
           </div>
-          <span className={cn(
-            "text-2xl font-semibold tabular-nums leading-none transition-colors duration-300",
-            complete ? "text-accent" : "text-foreground"
-          )}>
-            {pct}%
-          </span>
+
+          <div className="h-2 w-full rounded-full bg-secondary">
+            <div
+              className={cn("h-full rounded-full", !complete && "bg-primary")}
+              style={{
+                width: `${pct}%`,
+                transition: "width 700ms ease-out, box-shadow 700ms ease-out",
+                background: complete
+                  ? "linear-gradient(90deg, #c9a84c 0%, #ddb95c 50%, #c9a84c 100%)"
+                  : undefined,
+                boxShadow: complete
+                  ? "0 0 14px 5px rgba(201,168,76,0.45), 0 0 5px 2px rgba(201,168,76,0.75)"
+                  : summaryGlowing
+                  ? "0 0 10px 4px rgba(255,255,255,0.65)"
+                  : "none",
+              }}
+            />
+          </div>
         </div>
 
-        {/* Progress bar — overflow-hidden removed so glow can spread */}
-        <div className="h-2 w-full rounded-full bg-secondary">
-          <div
-            className={cn("h-full rounded-full", !complete && "bg-primary")}
-            style={{
-              width: `${pct}%`,
-              transition: "width 700ms ease-out, box-shadow 700ms ease-out",
-              background: complete
-                ? "linear-gradient(90deg, #c9a84c 0%, #ddb95c 50%, #c9a84c 100%)"
-                : undefined,
-              boxShadow: complete
-                ? "0 0 14px 5px rgba(201,168,76,0.45), 0 0 5px 2px rgba(201,168,76,0.75)"
-                : summaryGlowing
-                ? "0 0 10px 4px rgba(255,255,255,0.65)"
-                : "none",
-            }}
+        {/* ── Task cards ──────────────────────────────────────────────────── */}
+        {tasks.map((task) => (
+          <TaskCard
+            key={task.id}
+            task={task}
+            value={progressMap.get(task.id) ?? 0}
+            pending={pendingSet.has(task.id)}
+            hasReflection={hasReflectionSet.has(task.id)}
+            onIncrement={() => handleIncrement(task)}
+            onDecrement={() => handleDecrement(task)}
+            onToggle={() => handleToggle(task)}
+            onOpenReflection={() => handleOpenReflection(task)}
           />
+        ))}
+
+        {/* ── Undo banner ─────────────────────────────────────────────────── */}
+        <div
+          aria-live="polite"
+          aria-atomic="true"
+          className={cn(
+            "flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5",
+            "transition-all duration-300",
+            undoEntry
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 pointer-events-none translate-y-1"
+          )}
+        >
+          <span className="text-xs text-muted-foreground">Saved</span>
+          <button
+            onClick={handleUndo}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-secondary"
+          >
+            <Undo2 className="h-3 w-3" />
+            Undo
+          </button>
         </div>
       </div>
 
-      {/* ── Task cards ──────────────────────────────────────────────────── */}
-      {tasks.map((task) => (
-        <TaskCard
-          key={task.id}
-          task={task}
-          value={progressMap.get(task.id) ?? 0}
-          pending={pendingSet.has(task.id)}
-          onIncrement={() => handleIncrement(task)}
-          onDecrement={() => handleDecrement(task)}
-          onToggle={() => handleToggle(task)}
+      {/* ── Reflection modal ─────────────────────────────────────────────── */}
+      {reflectionOpen && (
+        <ReflectionModal
+          weekId={weekId}
+          weekStatus={weekStatus}
+          taskId={reflectionOpen.taskId}
+          taskTitle={reflectionOpen.title}
+          onClose={handleCloseReflection}
         />
-      ))}
-
-      {/* ── Undo banner ─────────────────────────────────────────────────── */}
-      <div
-        aria-live="polite"
-        aria-atomic="true"
-        className={cn(
-          "flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5",
-          "transition-all duration-300",
-          undoEntry
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 pointer-events-none translate-y-1"
-        )}
-      >
-        <span className="text-xs text-muted-foreground">Saved</span>
-        <button
-          onClick={handleUndo}
-          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-secondary"
-        >
-          <Undo2 className="h-3 w-3" />
-          Undo
-        </button>
-      </div>
-    </div>
+      )}
+    </>
   );
 }

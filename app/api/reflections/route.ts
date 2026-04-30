@@ -1,21 +1,62 @@
 import { createClient } from "@/lib/supabase/server";
-import { requireAuth, requirePartnership, err } from "@/lib/api/helpers";
+import { requireAuth, requirePartnership, err, ok } from "@/lib/api/helpers";
+import { getReflectionForTask, getReflectionsForWeek } from "@/lib/reflections/queries";
+
+/**
+ * GET /api/reflections?week_id=<uuid>
+ * GET /api/reflections?week_id=<uuid>&task_id=<uuid>
+ *
+ * Without task_id: returns all reflections for the given week (get_reflections_for_week).
+ * With task_id:    returns the single reflection for that task, or null (get_reflection_for_task).
+ * Reflections are private — partner data is never included.
+ */
+export async function GET(req: Request) {
+  const { user, unauthorized } = await requireAuth();
+  if (unauthorized) return unauthorized;
+
+  const { searchParams } = new URL(req.url);
+  const week_id = searchParams.get("week_id");
+  const task_id = searchParams.get("task_id");
+  if (!week_id) return err("week_id query param is required", 400);
+
+  const supabase = await createClient();
+
+  // Verify week exists and belongs to the user's partnership
+  const { partnership, partnershipError } = await requirePartnership(user!.id);
+  if (partnershipError) return partnershipError;
+
+  const { data: week } = await supabase
+    .from("weeks")
+    .select("id")
+    .eq("id", week_id)
+    .eq("partnership_id", partnership!.id)
+    .maybeSingle();
+
+  if (!week) return err("Week not found", 404);
+
+  if (task_id) {
+    const reflection = await getReflectionForTask(week_id, user!.id, task_id);
+    return ok({ reflection });
+  }
+
+  const reflections = await getReflectionsForWeek(week_id, user!.id);
+  return ok({ reflections });
+}
 
 /**
  * POST /api/reflections
  *
- * Creates a reflection tied to a week, and optionally to a specific task.
- * The week must be active (enforced by RLS + explicit check).
+ * Upserts a reflection for a week, optionally tied to a specific task.
+ * If a reflection already exists for the (user, week, task) combination
+ * it is updated in place rather than creating a duplicate.
+ * The week must be active.
  *
  * Body:
  *   {
  *     week_id:  string,
  *     content:  string,
- *     task_id?: string   // optional — ties reflection to a task
+ *     task_id?: string
  *   }
- *
- * Response:
- *   { data: { reflection } }
  */
 export async function POST(req: Request) {
   const { user, unauthorized } = await requireAuth();
@@ -39,7 +80,7 @@ export async function POST(req: Request) {
 
   const supabase = await createClient();
 
-  // Verify the week belongs to the user's partnership and is active
+  // Verify week belongs to the user's partnership and is active
   const { data: week } = await supabase
     .from("weeks")
     .select("id, status, partnership_id")
@@ -47,10 +88,10 @@ export async function POST(req: Request) {
     .eq("partnership_id", partnership!.id)
     .maybeSingle();
 
-  if (!week)              return err("Week not found", 404);
-  if (week.status !== "active") return err("Reflections cannot be added to a completed week", 403);
+  if (!week) return err("Week not found", 404);
+  if (week.status !== "active") return err("Reflections cannot be edited on a completed week", 403);
 
-  // If task_id provided, verify it belongs to this week
+  // If task_id is provided, verify it belongs to this week
   if (task_id) {
     const { data: task } = await supabase
       .from("weekly_tasks")
@@ -59,6 +100,21 @@ export async function POST(req: Request) {
       .eq("week_id", week_id)
       .maybeSingle();
     if (!task) return err("Task not found in this week", 404);
+  }
+
+  // Check for an existing reflection for this (user, week, task) slot
+  const existing = await getReflectionForTask(week_id, user!.id, task_id ?? null);
+
+  if (existing) {
+    const { data: reflection, error } = await supabase
+      .from("reflections")
+      .update({ content: content.trim() })
+      .eq("id", existing.id)
+      .select()
+      .single();
+
+    if (error) return err(error.message, 500);
+    return ok({ reflection });
   }
 
   const { data: reflection, error } = await supabase
@@ -73,6 +129,5 @@ export async function POST(req: Request) {
     .single();
 
   if (error) return err(error.message, 500);
-
-  return Response.json({ data: { reflection }, error: null }, { status: 201 });
+  return ok({ reflection }, 201);
 }

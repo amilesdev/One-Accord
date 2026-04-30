@@ -79,6 +79,7 @@ export interface DbReflection {
   task_id:    string | null;
   content:    string;
   created_at: string;
+  updated_at: string;
 }
 
 // ─── Joined / enriched types used by the UI ──────────────────────────────────
