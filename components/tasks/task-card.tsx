@@ -136,7 +136,7 @@ function CounterTask({
             className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-secondary"
           >
             {hasReflection ? (
-              <span className="h-2 w-2 rounded-full bg-accent/70" />
+              <ReflectionWrittenIcon />
             ) : (
               <PenLine className="h-3.5 w-3.5 text-muted-foreground/30 transition-colors hover:text-muted-foreground" />
             )}
@@ -162,60 +162,71 @@ function SimpleTask({ task, value, pending, hasReflection, onToggle, onOpenRefle
   const complete = value === 1;
 
   return (
-    <div
-      className={cn(
-        "w-full rounded-2xl border bg-card",
-        "flex items-stretch",
-        "transition-colors duration-200",
-        pending && "opacity-75",
-        complete
-          ? "border-accent/40"
-          : "border-border hover:border-primary/30"
-      )}
-    >
-      {/* Toggle area */}
-      <button
-        onClick={onToggle}
-        disabled={pending}
-        className={cn(
-          "flex flex-1 items-center gap-4 px-5 py-4 text-left",
-          "active:scale-[0.99] transition-transform duration-150",
-          "disabled:pointer-events-none",
-        )}
-      >
-        {/* Circle indicator */}
+    <div className={cn(
+      "rounded-2xl border bg-card transition-colors duration-200",
+      pending && "opacity-75",
+      complete ? "border-accent/40" : "border-border",
+    )}>
+      {/* Title */}
+      <div className="px-5 py-4">
         <span className={cn(
-          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
-          "border-2 transition-all duration-300",
-          complete ? "border-accent bg-accent" : "border-muted-foreground/30"
-        )}>
-          {complete && <Check className="h-3 w-3 text-white" strokeWidth={2.5} />}
-        </span>
-
-        {/* Label */}
-        <span className={cn(
-          "text-sm font-medium transition-all duration-300",
+          "text-sm font-medium leading-snug transition-all duration-300",
           complete
             ? "text-muted-foreground line-through decoration-muted-foreground/30"
             : "text-foreground"
         )}>
           {task.title}
         </span>
-      </button>
+      </div>
 
-      {/* Reflection button */}
-      <button
-        onClick={onOpenReflection}
-        aria-label={hasReflection ? "View reflection" : "Add reflection"}
-        className="flex items-center justify-center px-4 transition-colors hover:bg-secondary/50 rounded-r-2xl"
-      >
-        {hasReflection ? (
-          <span className="h-2 w-2 rounded-full bg-accent/70" />
-        ) : (
-          <PenLine className="h-3.5 w-3.5 text-muted-foreground/30 transition-colors" />
-        )}
-      </button>
+      {/* Controls — mirrors counter task footer */}
+      <div className={cn(
+        "flex items-center justify-end border-t px-4 py-3 transition-colors duration-300",
+        complete ? "border-accent/20" : "border-border",
+      )}>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenReflection}
+            aria-label={hasReflection ? "View reflection" : "Add reflection"}
+            className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-secondary"
+          >
+            {hasReflection ? (
+              <ReflectionWrittenIcon />
+            ) : (
+              <PenLine className="h-3.5 w-3.5 text-muted-foreground/30 transition-colors hover:text-muted-foreground" />
+            )}
+          </button>
+
+          <StepButton
+            onClick={onToggle}
+            disabled={pending}
+            primary={!complete}
+            aria-label={complete ? "Mark incomplete" : "Mark complete"}
+          >
+            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+          </StepButton>
+        </div>
+      </div>
     </div>
+  );
+}
+
+// ─── Reflection "has content" icon ────────────────────────────────────────────
+
+function ReflectionWrittenIcon() {
+  return (
+    <span className="flex flex-col items-center gap-[2px]">
+      <PenLine className="h-3 w-3 text-foreground" strokeWidth={2.5} />
+      <svg width="10" height="4" viewBox="0 0 10 4" fill="none" className="text-foreground">
+        <path
+          d="M0 2 Q1.25 0.5 2.5 2 Q3.75 3.5 5 2 Q6.25 0.5 7.5 2 Q8.75 3.5 10 2"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
   );
 }
 
