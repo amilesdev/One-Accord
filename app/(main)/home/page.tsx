@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Users, CalendarDays, AlertCircle } from "lucide-react";
+import { ShalomInfo } from "@/components/home/shalom-info";
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/ui/page-header";
 import { TaskList } from "@/components/tasks/task-list";
 import { WeekSummaryModal } from "@/components/summary/week-summary-modal";
 import { AutoRefresh } from "@/components/realtime/auto-refresh";
@@ -20,13 +20,22 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const partnership = await getActivePartnership(user.id);
+  // Fetch display name and partnership in parallel
+  const [{ data: userProfile }, partnership] = await Promise.all([
+    supabase.from("users").select("display_name").eq("id", user.id).maybeSingle(),
+    getActivePartnership(user.id),
+  ]);
+
+  const displayName =
+    userProfile?.display_name?.trim().split(" ")[0] ??
+    user.email?.split("@")[0] ??
+    "Friend";
 
   // ── No partnership ────────────────────────────────────────────────────────
   if (!partnership) {
     return (
       <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
-        <PageHeader title="This Week" />
+        <Greeting name={displayName} />
         <EmptyCard
           icon={<Users className="h-5 w-5" />}
           title="No partner linked"
@@ -52,7 +61,7 @@ export default async function HomePage() {
     if (weekResult.status === "error") {
       return (
         <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
-          <PageHeader title="This Week" />
+          <Greeting name={displayName} />
           <EmptyCard
             icon={<AlertCircle className="h-5 w-5" />}
             title="Something went wrong"
@@ -63,7 +72,7 @@ export default async function HomePage() {
     }
     return (
       <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
-        <PageHeader title="This Week" />
+        <Greeting name={displayName} />
         <EmptyCard
           icon={<CalendarDays className="h-5 w-5" />}
           title="No weekly plan yet"
@@ -82,10 +91,9 @@ export default async function HomePage() {
   // ── Active week ───────────────────────────────────────────────────────────
   return (
     <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
-      <PageHeader title="This Week" subtitle={weekLabel} />
+      <Greeting name={displayName} subtitle={weekLabel} />
       <TaskList
         tasks={weekData.tasks}
-        weekLabel={weekLabel}
         weekId={weekData.id}
         weekStatus={weekData.status}
         initialReflectionTaskIds={reflectionTaskIds}
@@ -94,6 +102,30 @@ export default async function HomePage() {
       {/* Background reconciliation — keeps local state in sync with server */}
       <AutoRefresh intervalMs={30000} />
     </div>
+  );
+}
+
+// ─── Greeting ─────────────────────────────────────────────────────────────────
+
+function Greeting({ name, subtitle }: { name: string; subtitle?: string }) {
+  return (
+    <header className="space-y-1">
+      <h1 className="text-3xl font-bold tracking-tight leading-tight">
+        <span className="relative inline-block">
+            <span className="text-primary" style={{ fontFamily: "var(--font-great-vibes)" }}>Shalom,</span>
+            <ShalomInfo />
+          </span>{" "}
+        <span
+          className="text-foreground font-bold tracking-tight"
+          style={{ textShadow: "0 0 18px rgba(255, 252, 230, 0.72), 0 0 6px rgba(255, 252, 220, 0.45)" }}
+        >
+          {name}
+        </span>
+      </h1>
+      {subtitle && (
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
+      )}
+    </header>
   );
 }
 
@@ -109,13 +141,13 @@ function EmptyCard({
   body: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-8 flex flex-col items-center gap-3 text-center">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+    <div className="rounded-2xl border border-border/60 bg-card shadow-card p-10 flex flex-col items-center gap-4 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
         {icon}
       </span>
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{body}</p>
+      <div className="space-y-1.5">
+        <p className="text-base font-semibold text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
       </div>
     </div>
   );

@@ -26,6 +26,22 @@ export default async function SettingsPage() {
     .eq("status", "pending")
     .maybeSingle();
 
+  // User's own profile + most recent invite code they created
+  const [profileResult, inviteCodeResult] = await Promise.all([
+    supabase
+      .from("users")
+      .select("display_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("partnerships")
+      .select("invite_code")
+      .eq("user_a_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
   // Template + partner profile — only needed when there's an active partnership
   let template     = null;
   let partnerProfile = null;
@@ -51,6 +67,10 @@ export default async function SettingsPage() {
         subtitle="Manage your weekly plan and partner."
       />
       <SettingsClient
+        userId={user.id}
+        userDisplayName={profileResult.data?.display_name ?? null}
+        userEmail={user.email ?? ""}
+        userInviteCode={inviteCodeResult.data?.invite_code ?? null}
         initialTemplate={template}
         partnership={partnership}
         pendingInviteCode={pendingPartnership?.invite_code ?? null}

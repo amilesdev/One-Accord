@@ -125,8 +125,13 @@ export default async function CompanionPage() {
       />
 
       {/* ── Side-by-side completion ──────────────────────────────── */}
-      <div className="rounded-2xl border border-border bg-card p-5">
-        <div className="grid grid-cols-2 divide-x divide-border">
+      <div
+        className="rounded-2xl border border-border/60 shadow-card p-5"
+        style={{
+          background: "linear-gradient(135deg, color-mix(in srgb, var(--primary) 7%, var(--card)), var(--card))",
+        }}
+      >
+        <div className="grid grid-cols-2 divide-x divide-border/60">
           <ComparisonColumn label="You"         pct={myPct}      side="left"  />
           <ComparisonColumn label={partnerName} pct={partnerPct} side="right" />
         </div>
@@ -184,7 +189,7 @@ function ComparisonColumn({
         <p className="text-xs text-muted-foreground truncate">{label}</p>
         <p
           className={cn(
-            "text-2xl font-semibold tabular-nums leading-none transition-colors duration-300",
+            "text-4xl font-bold tabular-nums leading-none tracking-tight transition-colors duration-300",
             complete ? "text-accent" : "text-foreground"
           )}
         >
@@ -225,7 +230,7 @@ function TaskComparisonCard({
   partnerName:  string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+    <div className="rounded-2xl border border-border/60 bg-card shadow-card p-5 space-y-4">
       <p className="text-sm font-medium text-foreground">{task.title}</p>
 
       <div className="space-y-3">
@@ -326,13 +331,13 @@ function EmptyCard({
   body:  string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-8 flex flex-col items-center gap-3 text-center">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+    <div className="rounded-2xl border border-border/60 bg-card shadow-card p-10 flex flex-col items-center gap-4 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
         {icon}
       </span>
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{body}</p>
+      <div className="space-y-1.5">
+        <p className="text-base font-semibold text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
       </div>
     </div>
   );

@@ -160,15 +160,15 @@ function WeekCard({ entry }: { entry: WeekEntry }) {
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-card p-5 space-y-4 transition-colors",
-        bothComplete ? "border-accent/30" : "border-border"
+        "rounded-2xl border bg-card shadow-card p-5 space-y-5 transition-colors",
+        bothComplete ? "border-accent/30" : "border-border/60"
       )}
     >
       {/* Week label + task count */}
       <div className="flex items-baseline justify-between gap-2">
         <p
           className={cn(
-            "text-sm font-semibold",
+            "text-base font-semibold",
             bothComplete ? "text-accent" : "text-foreground"
           )}
         >
@@ -187,11 +187,11 @@ function WeekCard({ entry }: { entry: WeekEntry }) {
 
       {/* Reflections */}
       {entry.reflections.length > 0 && (
-        <div className="space-y-2 border-t border-border pt-4">
+        <div className="space-y-2.5 border-t border-border/60 pt-4">
           {entry.reflections.map((r) => (
             <blockquote
               key={r.id}
-              className="text-xs text-muted-foreground leading-relaxed pl-3 border-l-2 border-muted"
+              className="text-xs text-muted-foreground leading-relaxed pl-3.5 border-l border-primary/30 italic"
             >
               {r.content}
             </blockquote>
@@ -245,13 +245,13 @@ function EmptyCard({
   body:  string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-8 flex flex-col items-center gap-3 text-center">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+    <div className="rounded-2xl border border-border/60 bg-card shadow-card p-10 flex flex-col items-center gap-4 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
         {icon}
       </span>
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{body}</p>
+      <div className="space-y-1.5">
+        <p className="text-base font-semibold text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">{body}</p>
       </div>
     </div>
   );

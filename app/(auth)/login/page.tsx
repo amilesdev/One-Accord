@@ -36,18 +36,20 @@ export default function LoginPage() {
   return (
     <div className="space-y-8">
       {/* Brand */}
-      <div className="flex flex-col items-center gap-3 text-center">
-        <BrandMark size={44} />
-        <div className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+      <div className="flex flex-col items-center gap-5 text-center">
+        <BrandMark size={52} />
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">
             One Accord
           </h1>
-          <p className="text-sm text-muted-foreground">Grow together in Christ.</p>
+          <p className="text-sm text-muted-foreground">
+            Grow together in Christ.
+          </p>
         </div>
       </div>
 
       {/* Card */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-modal">
         <form onSubmit={handleLogin} className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>

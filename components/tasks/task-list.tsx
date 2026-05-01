@@ -19,7 +19,6 @@ interface UndoEntry {
 
 interface TaskListProps {
   tasks:                      TaskWithProgress[];
-  weekLabel:                  string;
   weekId:                     string;
   weekStatus:                 "active" | "completed";
   initialReflectionTaskIds:   string[];
@@ -29,7 +28,6 @@ interface TaskListProps {
 
 export function TaskList({
   tasks,
-  weekLabel,
   weekId,
   weekStatus,
   initialReflectionTaskIds,
@@ -219,11 +217,16 @@ export function TaskList({
 
   if (tasks.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-8 text-center space-y-1.5">
-        <p className="text-sm font-medium text-foreground">No tasks this week</p>
-        <p className="text-xs text-muted-foreground">
-          Add tasks to your weekly plan in Settings.
-        </p>
+      <div className="rounded-2xl border border-border/60 bg-card shadow-card p-10 flex flex-col items-center gap-4 text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </span>
+        <div className="space-y-1.5">
+          <p className="text-base font-semibold text-foreground">No tasks this week</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">Add tasks to your weekly plan in Settings.</p>
+        </div>
       </div>
     );
   }
@@ -236,46 +239,50 @@ export function TaskList({
         {/* ── Summary card ────────────────────────────────────────────────── */}
         <div
           className={cn(
-            "rounded-2xl border bg-card p-5 space-y-3 transition-colors duration-500",
-            complete ? "border-accent/50" : "border-border"
+            "rounded-2xl border shadow-card overflow-hidden transition-colors duration-500",
+            complete ? "border-accent/40" : "border-border/60"
           )}
+          style={{
+            background: complete
+              ? "linear-gradient(135deg, color-mix(in srgb, #c9a84c 10%, var(--card)), var(--card))"
+              : "linear-gradient(135deg, color-mix(in srgb, var(--primary) 7%, var(--card)), var(--card))",
+          }}
         >
-          <div className="flex items-end justify-between gap-2">
-            <div className="space-y-0.5">
-              <p className="text-xs text-muted-foreground">{weekLabel}</p>
-              <p className={cn(
-                "text-sm font-semibold transition-colors duration-300",
-                complete ? "text-accent" : "text-foreground"
-              )}>
-                {complete
-                  ? "All tasks complete"
-                  : `${done} of ${tasks.length} complete`}
-              </p>
-            </div>
+          <div className="px-5 pt-5 pb-4 flex items-center justify-between gap-4">
+            <p className={cn(
+              "text-sm font-medium transition-colors duration-300",
+              complete ? "text-accent" : "text-muted-foreground"
+            )}>
+              {complete
+                ? "All tasks complete ✓"
+                : `${done} of ${tasks.length} tasks done`}
+            </p>
             <span className={cn(
-              "text-2xl font-semibold tabular-nums leading-none transition-colors duration-300",
+              "text-5xl font-bold tabular-nums leading-none tracking-tight shrink-0 transition-colors duration-300",
               complete ? "text-accent" : "text-foreground"
             )}>
               {pct}%
             </span>
           </div>
 
-          <div className="h-2 w-full rounded-full bg-secondary">
-            <div
-              className={cn("h-full rounded-full", !complete && "bg-primary")}
-              style={{
-                width: `${pct}%`,
-                transition: "width 700ms ease-out, box-shadow 700ms ease-out",
-                background: complete
-                  ? "linear-gradient(90deg, #c9a84c 0%, #ddb95c 50%, #c9a84c 100%)"
-                  : undefined,
-                boxShadow: complete
-                  ? "0 0 14px 5px rgba(201,168,76,0.45), 0 0 5px 2px rgba(201,168,76,0.75)"
-                  : summaryGlowing
-                  ? "0 0 10px 4px rgba(255,255,255,0.65)"
-                  : "none",
-              }}
-            />
+          <div className="px-5 pb-5">
+            <div className="h-1.5 w-full rounded-full bg-black/8 dark:bg-white/10">
+              <div
+                className={cn("h-full rounded-full", !complete && "bg-primary")}
+                style={{
+                  width: `${pct}%`,
+                  transition: "width 700ms ease-out, box-shadow 700ms ease-out",
+                  background: complete
+                    ? "linear-gradient(90deg, #c9a84c 0%, #ddb95c 50%, #c9a84c 100%)"
+                    : undefined,
+                  boxShadow: complete
+                    ? "0 0 14px 5px rgba(201,168,76,0.45), 0 0 5px 2px rgba(201,168,76,0.75)"
+                    : summaryGlowing
+                    ? "0 0 10px 4px rgba(255,255,255,0.65)"
+                    : "none",
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -299,17 +306,17 @@ export function TaskList({
           aria-live="polite"
           aria-atomic="true"
           className={cn(
-            "flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2.5",
+            "flex items-center justify-between rounded-xl border border-border/50 bg-card/90 backdrop-blur-sm px-4 py-2.5 shadow-card",
             "transition-all duration-300",
             undoEntry
               ? "opacity-100 translate-y-0"
-              : "opacity-0 pointer-events-none translate-y-1"
+              : "opacity-0 pointer-events-none translate-y-2"
           )}
         >
           <span className="text-xs text-muted-foreground">Saved</span>
           <button
             onClick={handleUndo}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-secondary"
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-secondary"
           >
             <Undo2 className="h-3 w-3" />
             Undo
