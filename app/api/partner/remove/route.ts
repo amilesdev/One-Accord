@@ -10,7 +10,9 @@ import { requireAuth, err } from "@/lib/api/helpers";
 export async function POST() {
   const { user, unauthorized } = await requireAuth();
   if (unauthorized) return unauthorized;
-
+ if (!user) {
+    return err("unauthorized", 401);
+  }
   const supabase = await createClient();
 
   const { error } = await supabase
