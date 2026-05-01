@@ -98,10 +98,10 @@ export function ReflectionModal({
       <div className={cn(
         "relative z-10 mx-4 mb-4 w-full max-w-lg sm:mb-0",
         "flex flex-col overflow-hidden",
-        "rounded-2xl border border-border bg-card shadow-xl",
+        "rounded-2xl border border-border/50 bg-card shadow-modal",
       )}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <div className="flex items-center justify-between border-b border-border/50 px-5 py-4">
           <div className="flex min-w-0 items-center gap-2.5">
             <PenLine className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="truncate text-sm font-medium text-foreground">

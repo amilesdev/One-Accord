@@ -16,8 +16,8 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md safe-bottom">
-      <div className="mx-auto flex max-w-lg items-center justify-around px-1 py-1.5">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/90 backdrop-blur-xl safe-bottom">
+      <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1.5">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href);
           return (
@@ -36,8 +36,8 @@ export function BottomNav() {
               )}
               <Icon
                 className={cn(
-                  "relative h-5 w-5",
-                  active ? "stroke-[2.5]" : "stroke-[1.75]"
+                  "relative h-5 w-5 transition-all duration-200",
+                  active ? "stroke-[2.25]" : "stroke-[1.5]"
                 )}
               />
               <span className="relative">{label}</span>

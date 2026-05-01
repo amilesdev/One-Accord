@@ -10,7 +10,7 @@ export default function AuthLayout({
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 40%, color-mix(in srgb, var(--primary) 8%, transparent), transparent)",
+            "radial-gradient(ellipse 90% 70% at 50% 35%, color-mix(in srgb, var(--primary) 13%, transparent), transparent 75%)",
         }}
         aria-hidden="true"
       />

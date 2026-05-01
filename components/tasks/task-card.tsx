@@ -62,23 +62,23 @@ function CounterTask({
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-card transition-colors duration-300",
-        complete ? "border-accent/40" : "border-border",
+        "rounded-2xl border bg-card shadow-card transition-colors duration-300",
+        complete ? "border-accent/35" : "border-border/60",
         pending && "opacity-80"
       )}
     >
       <div className="p-5 space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
           <span className={cn(
-            "text-sm font-medium leading-snug transition-colors duration-300",
+            "text-base font-medium leading-snug transition-colors duration-300",
             complete ? "text-accent" : "text-foreground"
           )}>
             {task.title}
           </span>
 
           <span className={cn(
-            "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums",
+            "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums mt-0.5",
             "transition-all duration-300",
             complete
               ? "bg-accent/15 text-accent"
@@ -89,7 +89,7 @@ function CounterTask({
         </div>
 
         {/* Progress bar */}
-        <div className="h-2 w-full rounded-full bg-secondary">
+        <div className="h-1.5 w-full rounded-full bg-secondary">
           <div
             className={cn("h-full rounded-full", !complete && "bg-primary")}
             style={{
@@ -107,7 +107,7 @@ function CounterTask({
       {/* Controls */}
       <div className={cn(
         "flex items-center justify-between border-t px-4 py-3 transition-colors duration-300",
-        complete ? "border-accent/20" : "border-border"
+        complete ? "border-accent/20" : "border-border/60"
       )}>
         <StepButton
           onClick={onDecrement}
@@ -163,14 +163,14 @@ function SimpleTask({ task, value, pending, hasReflection, onToggle, onOpenRefle
 
   return (
     <div className={cn(
-      "rounded-2xl border bg-card transition-colors duration-200",
+      "rounded-2xl border bg-card shadow-card transition-colors duration-200",
       pending && "opacity-75",
-      complete ? "border-accent/40" : "border-border",
+      complete ? "border-accent/35" : "border-border/60",
     )}>
       {/* Title */}
-      <div className="px-5 py-4">
+      <div className="px-5 py-5">
         <span className={cn(
-          "text-sm font-medium leading-snug transition-all duration-300",
+          "text-base font-medium leading-snug transition-all duration-300",
           complete
             ? "text-muted-foreground line-through decoration-muted-foreground/30"
             : "text-foreground"
@@ -182,7 +182,7 @@ function SimpleTask({ task, value, pending, hasReflection, onToggle, onOpenRefle
       {/* Controls — mirrors counter task footer */}
       <div className={cn(
         "flex items-center justify-end border-t px-4 py-3 transition-colors duration-300",
-        complete ? "border-accent/20" : "border-border",
+        complete ? "border-accent/20" : "border-border/60",
       )}>
         <div className="flex items-center gap-2">
           <button
@@ -252,7 +252,7 @@ function StepButton({
       aria-label={ariaLabel}
       className={cn(
         "flex h-9 w-9 items-center justify-center rounded-xl",
-        "transition-all duration-150 active:scale-90",
+        "transition-all duration-150 active:scale-[0.88]",
         "disabled:pointer-events-none disabled:opacity-25",
         primary
           ? "bg-primary text-primary-foreground hover:bg-primary/85 shadow-sm"
